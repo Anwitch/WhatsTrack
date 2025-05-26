@@ -55,6 +55,9 @@ def parse_pengeluaran(text):
             max_tokens=60
         )
         result = response.choices[0].text.strip()
+
+        print("OpenAI response:", result)
+
         kategori, harga, keterangan = [x.strip() for x in result.split(',', 2)]
         return kategori, int(harga), keterangan
     except Exception as e:
