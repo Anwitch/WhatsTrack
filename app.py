@@ -5,8 +5,10 @@ import gspread
 from google.oauth2.service_account import Credentials
 import os
 from dotenv import load_dotenv
-
+import openai
 load_dotenv()  # load environment variables from .env file
+openai.api_key = os.environ.get("OPENAI_API_KEY")
+
 
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -37,6 +39,29 @@ def tambah_pengeluaran(kategori, harga, keterangan):
         keterangan
     ])
 
+
+
+def parse_pengeluaran(text):
+    prompt = f"""
+    Tugasmu adalah mengambil informasi dari kalimat berikut dan mengubahnya ke format CSV: kategori, harga (angka saja, tanpa Rp atau titik), keterangan.
+    Kalimat: "{text}"
+    Jawaban (format: kategori, harga, keterangan):
+    """
+    try:
+        response = openai.Completion.create(
+            model="text-davinci-003",
+            prompt=prompt,
+            temperature=0,
+            max_tokens=60
+        )
+        result = response.choices[0].text.strip()
+        kategori, harga, keterangan = [x.strip() for x in result.split(',', 2)]
+        return kategori, int(harga), keterangan
+    except Exception as e:
+        print("Parsing error:", e)
+        return None, None, None
+
+
 app = Flask(__name__)
 
 @app.route('/')
@@ -49,17 +74,16 @@ def webhook():
     resp = MessagingResponse()
     msg = resp.message()
 
-    parts = incoming_msg.split(' ', 2)
-    if len(parts) >= 2 and parts[1].isdigit():
-        kategori = parts[0]
-        harga = int(parts[1])
-        keterangan = parts[2] if len(parts) == 3 else ''
+    kategori, harga, keterangan = parse_pengeluaran(incoming_msg)
+
+    if kategori and harga:
         tambah_pengeluaran(kategori, harga, keterangan)
-        msg.body(f"✅ Pengeluaran '{kategori}' sebesar Rp{harga} dicatat!")
+        msg.body(f"✅ Pengeluaran '{kategori}' sebesar Rp{harga} dicatat!\n📝 Keterangan: {keterangan}")
     else:
-        msg.body("Format salah. Contoh: makan 25000 nasi goreng")
+        msg.body("❌ Maaf, aku tidak paham inputnya. Coba tulis seperti: 'tadi makan mie ayam 15 ribu'")
 
     return str(resp)
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
