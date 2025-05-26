@@ -1,24 +1,33 @@
 from flask import Flask, request
 from twilio.twiml.messaging_response import MessagingResponse
-
+import json
 import gspread
 from google.oauth2.service_account import Credentials
-
 import os
-# Inisialisasi Google Sheets
+from dotenv import load_dotenv
+
+load_dotenv()  # load environment variables from .env file
+
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/drive'
 ]
-credentials = Credentials.from_service_account_file(
-    'Credentials/whatstrack-460713-818ce75f167c.json',
+
+creds_json = os.environ.get('GOOGLE_CREDENTIALS')
+if not creds_json:
+    raise Exception("Environment variable GOOGLE_CREDENTIALS belum di-set!")
+
+credentials_dict = json.loads(creds_json)
+
+credentials = Credentials.from_service_account_info(
+    credentials_dict,
     scopes=SCOPES
 )
+
 gc = gspread.authorize(credentials)
 sh = gc.open("Pengeluaran")
 worksheet = sh.sheet1
 
-# Contoh fungsi untuk menambah data
 def tambah_pengeluaran(kategori, harga, keterangan):
     from datetime import datetime
     worksheet.append_row([

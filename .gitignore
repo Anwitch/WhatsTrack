@@ -4,6 +4,8 @@
 # Ignore credentials
 Credentials/
 
+.env
+
 # Python cache
 __pycache__/
 *.pyc
