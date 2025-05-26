@@ -4,6 +4,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 import gspread
 from google.oauth2.service_account import Credentials
 
+import os
 # Inisialisasi Google Sheets
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -14,8 +15,8 @@ credentials = Credentials.from_service_account_file(
     scopes=SCOPES
 )
 gc = gspread.authorize(credentials)
-sh = gc.open("Pengeluaran") # Ganti dengan nama spreadsheet Anda
-worksheet = sh.sheet1  # atau pilih sheet lain jika perlu
+sh = gc.open("Pengeluaran")
+worksheet = sh.sheet1
 
 # Contoh fungsi untuk menambah data
 def tambah_pengeluaran(kategori, harga, keterangan):
@@ -48,4 +49,5 @@ def webhook():
     return str(resp)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
