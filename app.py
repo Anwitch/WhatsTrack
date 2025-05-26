@@ -5,9 +5,11 @@ import gspread
 from google.oauth2.service_account import Credentials
 import os
 from dotenv import load_dotenv
-import openai
+from openai import OpenAI
+
 load_dotenv()  # load environment variables from .env file
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+
+client =OpenAI()
 
 
 SCOPES = [
@@ -49,7 +51,7 @@ def parse_pengeluaran(text):
     Jawaban harus persis format CSV tanpa kata lain:
     """
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "Kamu adalah asisten pencatat keuangan."},
