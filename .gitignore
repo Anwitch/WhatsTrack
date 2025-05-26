@@ -1,0 +1,9 @@
+# Ignore virtual environment
+.venv/
+
+# Ignore credentials
+Credentials/
+
+# Python cache
+__pycache__/
+*.pyc
