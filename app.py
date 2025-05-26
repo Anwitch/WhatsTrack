@@ -5,12 +5,12 @@ import gspread
 from google.oauth2.service_account import Credentials
 import os
 from dotenv import load_dotenv
-from openai import OpenAI
+import requests  # Menggantikan openai library dengan requests
 
 load_dotenv()  # load environment variables from .env file
 
-client =OpenAI()
-
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -41,8 +41,6 @@ def tambah_pengeluaran(kategori, harga, keterangan):
         keterangan
     ])
 
-
-
 def parse_pengeluaran(text):
     prompt = f"""
     Kamu adalah asisten pencatat keuangan yang hanya menjawab dalam format CSV:
@@ -50,20 +48,31 @@ def parse_pengeluaran(text):
     Kalimat: "{text}"
     Jawaban harus persis format CSV tanpa kata lain:
     """
+    
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": "openai/gpt-3.5-turbo",  # Model gratis yang tersedia di OpenRouter
+            "messages": [
                 {"role": "system", "content": "Kamu adalah asisten pencatat keuangan."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0,
-            max_tokens=60
-        )
-        result = response.choices[0].message.content.strip()
-        print("OpenAI response:", result)
+            "temperature": 0,
+            "max_tokens": 60
+        }
+        
+        response = requests.post(OPENROUTER_API_URL, headers=headers, json=payload)
+        response.raise_for_status()
+        result = response.json()
+        
+        ai_response = result['choices'][0]['message']['content'].strip()
+        print("OpenRouter response:", ai_response)
 
-        parts = [x.strip() for x in result.split(',', 2)]
+        parts = [x.strip() for x in ai_response.split(',', 2)]
         if len(parts) < 2:
             raise ValueError("Format hasil tidak sesuai, kurang dari 2 bagian")
         kategori = parts[0]
@@ -72,7 +81,7 @@ def parse_pengeluaran(text):
         def ubah_ke_angka(text):
             text = text.lower().replace('.', '').replace(' ', '')
             if 'ribu' in text:
-                return int(float(text.replace('ribu', '')))
+                return int(float(text.replace('ribu', ''))) * 1000
             else:
                 return int(text)
 
@@ -83,8 +92,6 @@ def parse_pengeluaran(text):
     except Exception as e:
         print("Parsing error:", e)
         return None, None, None
-
-
 
 app = Flask(__name__)
 
@@ -107,7 +114,6 @@ def webhook():
         msg.body("❌ Maaf, aku tidak paham inputnya. Coba tulis seperti: 'tadi makan mie ayam 15 ribu'")
 
     return str(resp)
-
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
