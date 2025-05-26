@@ -39,6 +39,10 @@ def tambah_pengeluaran(kategori, harga, keterangan):
 
 app = Flask(__name__)
 
+@app.route('/')
+def home():
+    return "WhatsTrack Bot is running!"
+
 @app.route("/webhook", methods=['POST'])
 def webhook():
     incoming_msg = request.values.get('Body', '').strip()
@@ -59,4 +63,4 @@ def webhook():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='0.0.0.0', port=port)
