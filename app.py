@@ -43,26 +43,45 @@ def tambah_pengeluaran(kategori, harga, keterangan):
 
 def parse_pengeluaran(text):
     prompt = f"""
-    Tugasmu adalah mengambil informasi dari kalimat berikut dan mengubahnya ke format CSV: kategori, harga (angka saja, tanpa Rp atau titik), keterangan.
+    Kamu adalah asisten pencatat keuangan yang hanya menjawab dalam format CSV:
+    kategori, harga (angka bulat tanpa Rp, koma, titik, atau spasi), keterangan (boleh kosong).
     Kalimat: "{text}"
-    Jawaban (format: kategori, harga, keterangan):
+    Jawaban harus persis format CSV tanpa kata lain:
     """
     try:
-        response = openai.Completion.create(
-            model="text-davinci-003",
-            prompt=prompt,
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Kamu adalah asisten pencatat keuangan."},
+                {"role": "user", "content": prompt}
+            ],
             temperature=0,
             max_tokens=60
         )
-        result = response.choices[0].text.strip()
-
+        result = response.choices[0].message.content.strip()
         print("OpenAI response:", result)
 
-        kategori, harga, keterangan = [x.strip() for x in result.split(',', 2)]
-        return kategori, int(harga), keterangan
+        parts = [x.strip() for x in result.split(',', 2)]
+        if len(parts) < 2:
+            raise ValueError("Format hasil tidak sesuai, kurang dari 2 bagian")
+        kategori = parts[0]
+        harga_raw = parts[1]
+
+        def ubah_ke_angka(text):
+            text = text.lower().replace('.', '').replace(' ', '')
+            if 'ribu' in text:
+                return int(float(text.replace('ribu', '')))
+            else:
+                return int(text)
+
+        harga = ubah_ke_angka(harga_raw)
+        keterangan = parts[2] if len(parts) == 3 else ''
+
+        return kategori, harga, keterangan
     except Exception as e:
         print("Parsing error:", e)
         return None, None, None
+
 
 
 app = Flask(__name__)
