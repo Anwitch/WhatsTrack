@@ -4,6 +4,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 import gspread
 from google.oauth2.service_account import Credentials
 
+import os
 # Inisialisasi Google Sheets
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -48,4 +49,5 @@ def webhook():
     return str(resp)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
