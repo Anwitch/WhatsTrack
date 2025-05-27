@@ -66,6 +66,8 @@ def parse_pengeluaran(text):
         }
         
         response = requests.post(OPENROUTER_API_URL, headers=headers, json=payload)
+        print("Response status:", response.status_code)
+        print("Response text:", response.text)
         response.raise_for_status()
         result = response.json()
         
