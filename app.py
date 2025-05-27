@@ -32,6 +32,39 @@ gc = gspread.authorize(credentials)
 sh = gc.open("Pengeluaran")
 worksheet = sh.sheet1
 
+from collections import defaultdict
+from datetime import datetime
+
+def laporan_pengeluaran_harian():
+    data = worksheet.get_all_values()
+    header = data[0]
+    rows = data[1:]
+
+    tanggal_idx = header.index("Tanggal & Waktu")
+    harga_idx = header.index("Harga")
+
+    total_per_tanggal = defaultdict(int)
+
+    for row in rows:
+        try:
+            tanggal_str = row[tanggal_idx]
+            harga_str = row[harga_idx]
+
+            tanggal = datetime.strptime(tanggal_str, "%Y-%m-%d %H:%M:%S").date()
+            harga = int(harga_str)
+
+            total_per_tanggal[tanggal] += harga
+        except Exception as e:
+            print("Skip row due to error:", e)
+            continue
+
+    hasil = "📊 Laporan Pengeluaran Harian:\n"
+    for tanggal, total in sorted(total_per_tanggal.items(), reverse=True):
+        hasil += f"- {tanggal}: Rp{total:,}\n"
+
+    return hasil.strip()
+
+
 def tambah_pengeluaran(kategori, harga, keterangan):
     from datetime import datetime
     worksheet.append_row([
@@ -90,8 +123,8 @@ def parse_pengeluaran(text):
         parts = [x.strip() for x in ai_response.split(',', 2)]
         if len(parts) < 2:
             raise ValueError("Format hasil tidak sesuai, kurang dari 2 bagian")
-        kategori = parts[0]
-        harga_raw = parts[1]
+        kategori = parts[0].strip().capitalize()
+        harga_raw = parts[1].strip()
 
         def ubah_ke_angka(text):
             text = text.lower().replace('.', '').replace(' ', '')
@@ -101,7 +134,7 @@ def parse_pengeluaran(text):
                 return int(text)
 
         harga = ubah_ke_angka(harga_raw)
-        keterangan = parts[2] if len(parts) == 3 else ''
+        keterangan = parts[2].strip().title() if len(parts) == 3 else ''
 
         return kategori, harga, keterangan
     except Exception as e:
@@ -120,13 +153,17 @@ def webhook():
     resp = MessagingResponse()
     msg = resp.message()
 
-    kategori, harga, keterangan = parse_pengeluaran(incoming_msg)
-
-    if kategori and harga:
-        tambah_pengeluaran(kategori, harga, keterangan)
-        msg.body(f"✅ Pengeluaran '{kategori}' sebesar Rp{harga} dicatat!\n📝 Keterangan: {keterangan}")
+    if "laporan" in incoming_msg and "harian" in incoming_msg:
+        laporan = laporan_pengeluaran_harian()
+        msg.body(laporan)
     else:
-        msg.body("❌ Maaf, aku tidak paham inputnya. Coba tulis seperti: 'tadi makan mie ayam 15 ribu'")
+        kategori, harga, keterangan = parse_pengeluaran(incoming_msg)
+
+        if kategori and harga:
+            tambah_pengeluaran(kategori, harga, keterangan)
+            msg.body(f"✅ Pengeluaran '{kategori}' sebesar Rp{harga} dicatat!\n📝 Keterangan: {keterangan}")
+        else:
+            msg.body("❌ Maaf, aku tidak paham inputnya. Coba tulis seperti: 'tadi makan mie ayam 15 ribu'")
 
     return str(resp)
 
