@@ -40,7 +40,7 @@ def laporan_pengeluaran_harian():
     header = data[0]
     rows = data[1:]
 
-    tanggal_idx = header.index("Tanggal & Waktu")
+    tanggal_idx = header.index("Tanggal")
     harga_idx = header.index("Harga")
 
     total_per_tanggal = defaultdict(int)
