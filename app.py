@@ -72,6 +72,7 @@ def parse_pengeluaran(text):
         result = response.json()
         
         ai_response = result['choices'][0]['message']['content'].strip()
+        ai_response = ai_response.replace('"', '').replace("'", "")
         print("OpenRouter response:", ai_response)
 
         parts = [x.strip() for x in ai_response.split(',', 2)]
