@@ -32,38 +32,6 @@ gc = gspread.authorize(credentials)
 sh = gc.open("Pengeluaran")
 worksheet = sh.sheet1
 
-from collections import defaultdict
-from datetime import datetime
-
-def laporan_pengeluaran_harian():
-    data = worksheet.get_all_values()
-    header = data[0]
-    rows = data[1:]
-
-    tanggal_idx = header.index("Tanggal")
-    harga_idx = header.index("Harga")
-
-    total_per_tanggal = defaultdict(int)
-
-    for row in rows:
-        try:
-            tanggal_str = row[tanggal_idx]
-            harga_str = row[harga_idx]
-
-            tanggal = datetime.strptime(tanggal_str, "%Y-%m-%d %H:%M:%S").date()
-            harga = int(harga_str)
-
-            total_per_tanggal[tanggal] += harga
-        except Exception as e:
-            print("Skip row due to error:", e)
-            continue
-
-    hasil = "📊 Laporan Pengeluaran Harian:\n"
-    for tanggal, total in sorted(total_per_tanggal.items(), reverse=True):
-        hasil += f"- {tanggal}: Rp{total:,}\n"
-
-    return hasil.strip()
-
 
 def tambah_pengeluaran(kategori, harga, keterangan):
     from datetime import datetime
@@ -153,17 +121,13 @@ def webhook():
     resp = MessagingResponse()
     msg = resp.message()
 
-    if "laporan" in incoming_msg and "harian" in incoming_msg:
-        laporan = laporan_pengeluaran_harian()
-        msg.body(laporan)
-    else:
-        kategori, harga, keterangan = parse_pengeluaran(incoming_msg)
+    kategori, harga, keterangan = parse_pengeluaran(incoming_msg)
 
-        if kategori and harga:
-            tambah_pengeluaran(kategori, harga, keterangan)
-            msg.body(f"✅ Pengeluaran '{kategori}' sebesar Rp{harga} dicatat!\n📝 Keterangan: {keterangan}")
-        else:
-            msg.body("❌ Maaf, aku tidak paham inputnya. Coba tulis seperti: 'tadi makan mie ayam 15 ribu'")
+    if kategori and harga:
+        tambah_pengeluaran(kategori, harga, keterangan)
+        msg.body(f"✅ Pengeluaran '{kategori}' sebesar Rp{harga} dicatat!\n📝 Keterangan: {keterangan}")
+    else:
+        msg.body("❌ Maaf, aku tidak paham inputnya. Coba tulis seperti: 'tadi makan mie ayam 15 ribu'")
 
     return str(resp)
 
