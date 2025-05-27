@@ -43,10 +43,22 @@ def tambah_pengeluaran(kategori, harga, keterangan):
 
 def parse_pengeluaran(text):
     prompt = f"""
-    Kamu adalah asisten pencatat keuangan yang hanya menjawab dalam format CSV:
-    kategori, harga (angka bulat tanpa Rp, koma, titik, atau spasi), keterangan (boleh kosong).
-    Kalimat: "{text}"
-    Jawaban harus persis format CSV tanpa kata lain:
+    Kamu adalah asisten pencatat keuangan.
+    Tugasmu adalah membaca kalimat dan mengeluarkan hasil dalam format CSV (comma separated values) tanpa penjelasan.
+    Format CSV:
+    kategori,harga,keterangan
+
+    Ketentuan:
+    - kategori: jenis pengeluaran seperti makan, minum, transport, hiburan, dll
+    - harga: angka bulat dalam satuan rupiah tanpa simbol atau pemisah (contoh: 15000)
+    - keterangan: boleh kosong, tetapi jika ada tambahan deskripsi (misalnya "kopi" atau "ayam geprek") masukkan di sini.
+
+    Contoh:
+    Kalimat input: "tadi makan mie ayam 15 ribu"
+    Jawaban: makan,15000,mie ayam
+
+    Kalimat inputnya adalah: "{text}"
+    Jawaban:
     """
     
     try:
