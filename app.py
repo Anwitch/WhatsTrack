@@ -56,7 +56,7 @@ def parse_pengeluaran(text):
         }
         
         payload = {
-            "model": "openchat/openchat-3.5",  # Model gratis yang tersedia di OpenRouter
+            "model": "mistralai/mistral-7b-instruct:free",
             "messages": [
                 {"role": "system", "content": "Kamu adalah asisten pencatat keuangan."},
                 {"role": "user", "content": prompt}
